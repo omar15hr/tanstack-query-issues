@@ -1,6 +1,8 @@
 import { FiCheckCircle, FiInfo, FiMessageSquare } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import { GithubIssue, State } from "../interfaces/issue.interface";
+import { useQueryClient } from "@tanstack/react-query";
+import { getIssue } from "../actions/get-issue.action";
 
 interface IssueItemProps {
   issue: GithubIssue;
@@ -8,9 +10,30 @@ interface IssueItemProps {
 
 export const IssueItem = ({ issue }: IssueItemProps) => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const prefetchData = () => {
+    queryClient.prefetchQuery({
+      queryKey: ["issue", issue.number],
+      queryFn: () => getIssue(issue.number),
+      staleTime: 1000 * 60,
+    });
+
+    // podemos hacer lo mismo para los comentarios
+  };
+
+  const presetData = () => {
+    queryClient.setQueryData(["issue", issue.number], issue, {
+      updatedAt: Date.now() + (1000 * 60),
+    });
+  };
 
   return (
-    <div className="animate-fadeIn flex items-center px-2 py-3 mb-5 border rounded-md bg-slate-900 hover:bg-slate-800">
+    <div
+      // onMouseEnter={prefetchData}
+      onMouseEnter={presetData}
+      className="animate-fadeIn flex items-center px-2 py-3 mb-5 border rounded-md bg-slate-900 hover:bg-slate-800"
+    >
       {issue.state === State.Close ? (
         <FiCheckCircle size={30} color="green" className="min-w-10" />
       ) : (
@@ -25,7 +48,8 @@ export const IssueItem = ({ issue }: IssueItemProps) => {
           {issue.title}
         </a>
         <span className="text-gray-500">
-          # {issue.number} opened 2 days ago by <span className="font-bold">{issue.user?.login}</span>
+          # {issue.number} opened 2 days ago by{" "}
+          <span className="font-bold">{issue.user?.login}</span>
         </span>
       </div>
 
